@@ -1,8 +1,7 @@
-
 import { describe, it, expect } from 'vitest';
 import { minutesToTime, timeToMinutes, formatDuration } from './time';
-import { checkAvailability } from './availability';
 import type { Room } from '../types';
+import { checkAvailability, isOverlapping, isPastTime } from './availability';
 
 function makeRoom(overrides: Partial<Room> = {}): Room {
   return {
@@ -65,10 +64,10 @@ describe('checkAvailability', () => {
   });
 
   it('rejects a start time equal to current time', () => {
-  expect(
-    checkAvailability(makeRoom(), 540, 600, 540).available
-  ).toBe(false);
-});
+    expect(
+      checkAvailability(makeRoom(), 540, 600, 540).available
+    ).toBe(false);
+  });
 
   it('rejects a start time before current time', () => {
     expect(checkAvailability(makeRoom(), 530, 550, 540).available).toBe(false);
@@ -152,5 +151,28 @@ describe('checkAvailability', () => {
     const result = checkAvailability(room, 650, 700, 540);
     expect(result.available).toBe(false);
     expect(result.reasons.some((reason) => reason.includes('bookings'))).toBe(true);
+  });
+});
+
+describe('date helper safeguards (R-01)', () => {
+  it('detects overlapping valid date ranges and rejects disjoint ones', () => {
+    expect(
+      isOverlapping('2026-11-22T10:00:00Z', '2026-11-22T11:00:00Z', '2026-11-22T10:30:00Z', '2026-11-22T11:30:00Z')
+    ).toBe(true);
+    expect(
+      isOverlapping('2026-11-22T10:00:00Z', '2026-11-22T11:00:00Z', '2026-11-22T11:00:00Z', '2026-11-22T12:00:00Z')
+    ).toBe(false);
+  });
+
+  it('returns false when given invalid date strings instead of silent NaN comparisons', () => {
+    expect(
+      isOverlapping('invalid-date', '2026-11-22T11:00:00Z', '2026-11-22T10:30:00Z', '2026-11-22T11:30:00Z')
+    ).toBe(false);
+    expect(isPastTime('invalid-date', '2026-11-22T10:00:00Z')).toBe(false);
+  });
+
+  it('checks past timestamps accurately against a reference time', () => {
+    expect(isPastTime('2026-11-22T09:59:00Z', '2026-11-22T10:00:00Z')).toBe(true);
+    expect(isPastTime('2026-11-22T10:00:00Z', '2026-11-22T10:00:00Z')).toBe(false);
   });
 });

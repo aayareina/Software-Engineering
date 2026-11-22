@@ -68,11 +68,22 @@ export function isOverlapping(
   const e1 = new Date(end1).getTime();
   const s2 = new Date(start2).getTime();
   const e2 = new Date(end2).getTime();
+  if (
+    !Number.isFinite(s1) ||
+    !Number.isFinite(e1) ||
+    !Number.isFinite(s2) ||
+    !Number.isFinite(e2)
+  ) {
+    return false;
+  }
   return s1 < e2 && s2 < e1;
 }
 
 export function isPastTime(dateTime: Date | string, referenceTime?: Date | string): boolean {
   const target = new Date(dateTime).getTime();
   const now = referenceTime ? new Date(referenceTime).getTime() : Date.now();
+  if (!Number.isFinite(target) || !Number.isFinite(now)) {
+    return false;
+  }
   return target < now;
 }
